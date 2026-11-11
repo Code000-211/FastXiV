@@ -1,0 +1,11 @@
+[Unit]
+Description=fastxiv: daily arXiv harvest
+
+[Timer]
+# arXiv announces new papers around 00:00 UTC (Sunday to Thursday).
+OnCalendar=*-*-* 02:17:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

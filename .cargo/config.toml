@@ -1,0 +1,3 @@
+[net]
+# Fetch the microPi git dependency with the git CLI (honours the system's proxy and CA settings).
+git-fetch-with-cli = true

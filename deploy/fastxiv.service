@@ -1,0 +1,20 @@
+# The MCP server. Install: see README.md ("Run it on your server").
+[Unit]
+Description=fastxiv arXiv search (MCP over HTTP)
+After=network.target
+
+[Service]
+User=fastxiv
+Environment=FASTXIV_DATA=/var/lib/fastxiv
+# Optional: require `Authorization: Bearer <token>` (put FASTXIV_TOKEN=... in this file, mode 600).
+EnvironmentFile=-/etc/fastxiv.env
+ExecStart=/usr/local/bin/fastxiv serve --http 127.0.0.1:8765 --threads 4
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fastxiv
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

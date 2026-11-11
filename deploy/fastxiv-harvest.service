@@ -1,0 +1,17 @@
+# Fetches new and changed arXiv metadata; started daily by fastxiv-harvest.timer.
+# The running server picks the changes up within --refresh-secs (default 5 minutes).
+[Unit]
+Description=fastxiv: harvest new arXiv metadata
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=fastxiv
+Environment=FASTXIV_DATA=/var/lib/fastxiv
+ExecStart=/usr/local/bin/fastxiv harvest
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fastxiv
+PrivateTmp=true

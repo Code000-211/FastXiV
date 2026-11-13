@@ -13,7 +13,7 @@ use crate::paper::{self, Paper};
 /// Weight of the citation prior when a query does not set one (see `citations::prior`).
 pub const DEFAULT_PRIOR: f32 = 0.2;
 /// How many of the best text matches the prior ranks again, when a query does not say.
-pub const DEFAULT_POOL: usize = 50;
+pub const DEFAULT_POOL: usize = 200;
 
 pub struct Library {
     engine: Arc<Engine>,

@@ -1,0 +1,10 @@
+[Unit]
+Description=fastxiv: weekly citation refresh
+
+[Timer]
+OnCalendar=Sun *-*-* 04:13:00 UTC
+RandomizedDelaySec=30m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

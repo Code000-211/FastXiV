@@ -39,6 +39,26 @@ A harvest is limited by arXiv's server, not by fastxiv: about 9 s per page of 1,
 | 14,822 recent papers plus the 42 targets, fresh index | 81% | 86% | 99% | 0.855 |
 | The same, with the 42 targets in the overlay of changed files | 50% | 73% | 96% | 0.647 |
 
+### Citation prior
+
+`fastxiv citations` fetches citation counts from Semantic Scholar's batch API (500 papers per request, no key needed)
+into `citations.tsv`. Search then re-ranks the top 50 by `text score / best score + w · log10(1 + citations per year)`.
+The default weight is `w = 0.1`; set it with `--prior` on `search` and `serve`, and use 0 to turn it off. Results show
+their citation count. Semantic Scholar merges a preprint with its published version, so an arXiv id gets both
+versions' citations. On the local corpus, 14,713 of 14,864 papers had a count; fetching them took 2 minutes.
+
+| Prior weight | Hit@1 | Hit@3 | Hit@10 | MRR |
+|---:|---:|---:|---:|---:|
+| 0 (off) | 81% | 86% | 99% | 0.855 |
+| 0.05 | 84% | 93% | 99% | 0.890 |
+| 0.1 | 91% | 99% | 99% | 0.945 |
+| 0.2 – 0.5 | 96% | 99% | 99% | 0.969 |
+
+The known-item set favours famous papers, so a strong prior always looks good on it. Topic searches ("diffusion
+language models", "KV cache compression") keep showing recent papers at 0.1. At 0.2 and above, the more-cited ones
+move up. `fastxiv eval --prior 0,0.05,0.1,0.2` compares weights on your own index. The weekly
+`fastxiv-citations.timer` keeps the counts current.
+
 A small corpus is easier than the full one: measure on the server's 525k papers before trusting these numbers. Papers in
 the overlay rank lower until the index is rebuilt. That is why `fastxiv index` always rebuilds, and why the server
 folds an overlay into a rebuilt index after at most 10 minutes. The misses are mostly famous papers
@@ -89,9 +109,10 @@ $FASTXIV_DATA/
 sudo useradd --system --home /var/lib/fastxiv --create-home fastxiv
 sudo install -m 755 target/release/fastxiv /usr/local/bin/
 sudo -u fastxiv FASTXIV_DATA=/var/lib/fastxiv fastxiv harvest     # the first full harvest; takes a while
-sudo cp deploy/fastxiv.service deploy/fastxiv-harvest.service deploy/fastxiv-harvest.timer /etc/systemd/system/
+sudo cp deploy/*.service deploy/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now fastxiv.service fastxiv-harvest.timer
+sudo systemctl enable --now fastxiv.service fastxiv-harvest.timer fastxiv-citations.timer
+sudo systemctl start --no-block fastxiv-citations.service   # first citation fetch, about an hour
 curl -s 127.0.0.1:8765/health
 ```
 

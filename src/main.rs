@@ -1,5 +1,6 @@
 //! fastxiv: a local arXiv search for LLM agents.
 
+mod citations;
 mod eval;
 mod format;
 mod harvest;
@@ -26,7 +27,11 @@ Commands:
               -k N  --since YYYY[-MM]  --until YYYY[-MM]  --categories cs.CL,...  --detail N  QUERY...
   paper     Show one paper: ID
   related   Papers related to one: [-k N] ID
+  citations Fetch citation counts from Semantic Scholar into DIR/citations.tsv (a ranking prior)
+              --missing (only papers without a count yet)  --delay-ms 1100
+              Set SEMANTIC_SCHOLAR_API_KEY to use a key (higher rate limit).
   eval      Measure Hit@1/3/10 and MRR on a known-item set: [-k N] [FILE] (default eval/known-items.tsv)
+              --prior 0,0.05,0.1 compares weights of the citation prior
   serve     Run the MCP server: over stdio, or over HTTP with --http ADDR (e.g. 127.0.0.1:8765)
               --threads N (default 4)  --refresh-secs N (default 300; 0: never)
               Set FASTXIV_TOKEN to require `Authorization: Bearer <token>` over HTTP.
@@ -163,13 +168,15 @@ fn run() -> Result<(), String> {
             let since = args.month(&["--since"])?;
             let until = args.month(&["--until"])?;
             let categories = args.list(&["--categories", "--cat"])?.unwrap_or_default();
+            let prior =
+                args.opt(&["--prior"])?.map(|v| v.parse::<f32>()).transpose().map_err(|_| "--prior needs a number")?;
             let query = args.words();
             if query.is_empty() {
                 return Err("search needs a query".into());
             }
             let lib = Library::open(&data);
             let view = wait_for_index(&lib)?;
-            let q = Query { text: &query, k: k.max(1), since, until, categories: &categories, exclude: None };
+            let q = Query { text: &query, k: k.max(1), since, until, categories: &categories, exclude: None, prior };
             print!("{}", format::answer(&lib.search(&view, &q), &query, detail));
         }
         "paper" => {
@@ -188,26 +195,54 @@ fn run() -> Result<(), String> {
         }
         "eval" => {
             let k = args.num(&["-k", "--k"], 10)?;
+            let priors: Vec<Option<f32>> = match args.list(&["--prior"])? {
+                None => vec![None],
+                Some(ws) => ws
+                    .iter()
+                    .map(|w| w.parse::<f32>().map(Some).map_err(|_| format!("--prior: \"{w}\" is not a number")))
+                    .collect::<Result<_, _>>()?,
+            };
             let file = args.words();
             let file = if file.is_empty() { "eval/known-items.tsv".to_string() } else { file };
             let text = std::fs::read_to_string(&file).map_err(|e| format!("{file}: {e}"))?;
             let cases = eval::parse(&text)?;
             let lib = Library::open(&data);
             let view = wait_for_index(&lib)?;
-            print!("{}", eval::run(&lib, &view, &cases, k.max(1)));
+            eprintln!("{} citation counts loaded", lib.citations().len());
+            for prior in priors {
+                let w = prior.unwrap_or(lib.default_prior);
+                println!("=== citation prior {w}");
+                print!("{}", eval::run(&lib, &view, &cases, k.max(1), prior));
+            }
+        }
+        "citations" => {
+            let missing = args.rest.iter().any(|a| a == "--missing");
+            args.rest.retain(|a| a != "--missing");
+            let delay = Duration::from_millis(args.num(&["--delay-ms"], 1100)? as u64);
+            let key = std::env::var("SEMANTIC_SCHOLAR_API_KEY").ok().filter(|k| !k.is_empty());
+            let t0 = Instant::now();
+            let (known, asked) = citations::fetch(&data, missing, delay, key.as_deref())?;
+            eprintln!("citations done in {:.0} s: {known} of {asked} papers known", t0.elapsed().as_secs_f64());
         }
         "serve" => {
             let http = args.opt(&["--http"])?;
             let threads = args.num(&["--threads"], 4)?;
             let refresh = args.num(&["--refresh-secs"], 300)?;
+            let prior =
+                args.opt(&["--prior"])?.map(|v| v.parse::<f32>()).transpose().map_err(|_| "--prior needs a number")?;
             let token = std::env::var("FASTXIV_TOKEN").ok().filter(|t| !t.is_empty());
-            let lib = Arc::new(Library::open(&data));
+            let mut lib = Library::open(&data);
+            if let Some(w) = prior {
+                lib.default_prior = w;
+            }
+            let lib = Arc::new(lib);
             if refresh > 0 {
                 // Picks up what a harvest (a cron job) wrote, without a restart.
                 let lib = Arc::clone(&lib);
                 std::thread::spawn(move || loop {
                     std::thread::sleep(Duration::from_secs(refresh as u64));
                     lib.refresh();
+                    lib.reload_citations();
                 });
             }
             match http {

@@ -52,7 +52,8 @@ pub fn answer(a: &Answer, query: &str, detail: usize) -> String {
     for (i, f) in a.found.iter().enumerate() {
         let p = &f.paper;
         let _ = writeln!(out, "\n{}. [{}] {}", i + 1, p.id, p.title);
-        let _ = writeln!(out, "   {} · {} · {}", month(p), p.categories.join(" "), authors(p, AUTHORS_SHOWN));
+        let cited = f.citations.map_or(String::new(), |n| format!(" · {n} citation{}", if n == 1 { "" } else { "s" }));
+        let _ = writeln!(out, "   {} · {}{cited} · {}", month(p), p.categories.join(" "), authors(p, AUTHORS_SHOWN));
         if i < detail {
             if let Some(c) = &p.comments {
                 let _ = writeln!(out, "   Comments: {}", cut(c, 160));

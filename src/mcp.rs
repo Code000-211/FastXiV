@@ -115,6 +115,7 @@ fn call_tool(lib: &Library, name: &str, args: &Value) -> Result<String, String> 
                 until: arg_month(args, "until")?,
                 categories: &categories,
                 exclude: None,
+                prior: None,
             };
             Ok(format::answer(&lib.search(&view, &q), query, arg_k(args, "detail", 3, 50)))
         }

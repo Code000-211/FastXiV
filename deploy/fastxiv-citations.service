@@ -1,0 +1,20 @@
+# Refreshes citation counts from Semantic Scholar (a ranking prior); started weekly by
+# fastxiv-citations.timer. About 1,000 batch requests for 525k papers, roughly an hour.
+# The running server loads the new counts within --refresh-secs.
+[Unit]
+Description=fastxiv: refresh citation counts from Semantic Scholar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=fastxiv
+Environment=FASTXIV_DATA=/var/lib/fastxiv
+# Optional: SEMANTIC_SCHOLAR_API_KEY=... for a higher rate limit (file mode 600).
+EnvironmentFile=-/etc/fastxiv.env
+ExecStart=/usr/local/bin/fastxiv citations
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/fastxiv
+PrivateTmp=true

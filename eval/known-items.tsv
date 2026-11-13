@@ -1,0 +1,73 @@
+# Known-item queries: kind <TAB> query <TAB> arXiv ids that count as a hit (| between ids).
+# name: how people refer to a paper (its name or title words). desc: what it does, without its title's words.
+# Ids and titles checked against the arXiv API on 2026-11-13; all are in FastXiV's default categories.
+name	attention is all you need	1706.03762
+desc	transformer architecture based solely on attention mechanisms, dispensing with recurrence and convolutions for machine translation	1706.03762
+name	BERT pre-training deep bidirectional transformers	1810.04805
+desc	masked language model pretraining of a bidirectional encoder fine-tuned for language understanding tasks	1810.04805
+name	LoRA low-rank adaptation	2106.09685
+desc	freeze pretrained weights and inject trainable rank decomposition matrices into each layer to cut fine-tuning parameters	2106.09685
+name	GPT-3 language models are few-shot learners	2005.14165
+desc	175 billion parameter autoregressive model performing tasks from a few demonstrations in context without gradient updates	2005.14165
+name	Adam stochastic optimization	1412.6980
+desc	first-order gradient optimizer with adaptive estimates of lower-order moments and bias correction	1412.6980
+name	chain-of-thought prompting	2201.11903
+desc	generating intermediate reasoning steps in exemplars improves arithmetic and commonsense reasoning of large language models	2201.11903
+name	InstructGPT instruction following with human feedback	2203.02155
+desc	fine-tune GPT-3 with supervised demonstrations and reinforcement learning from human preference rankings to align with user intent	2203.02155
+name	direct preference optimization DPO	2305.18290
+desc	align language models to preferences with a simple classification loss instead of training a reward model and running RL	2305.18290
+name	retrieval-augmented generation RAG knowledge-intensive NLP	2005.11401
+desc	combine a pretrained seq2seq generator with a dense passage retriever over Wikipedia for open-domain question answering	2005.11401
+name	Llama 2 open foundation chat models	2307.09288
+name	LLaMA open efficient foundation language models	2302.13971
+name	scaling laws for neural language models	2001.08361
+desc	cross-entropy loss follows power laws in model size, dataset size and training compute	2001.08361
+name	Chinchilla compute-optimal training	2203.15556
+desc	for a fixed compute budget model size and number of training tokens should be scaled equally	2203.15556
+name	auto-encoding variational Bayes	1312.6114
+desc	reparameterization trick for stochastic variational inference with continuous latent variables and recognition model	1312.6114
+name	generative adversarial networks	1406.2661
+desc	generator and discriminator trained in a minimax two-player game	1406.2661
+name	FlashAttention IO-aware exact attention	2205.14135
+desc	tiling to reduce memory reads and writes between GPU high bandwidth memory and on-chip SRAM when computing attention	2205.14135
+name	vLLM PagedAttention	2309.06180
+desc	manage key-value cache memory in non-contiguous blocks like virtual memory paging for high-throughput LLM serving	2309.06180
+name	speculative decoding	2211.17192
+desc	sample several tokens from a small draft model and verify them in parallel with the large model without changing the output distribution	2211.17192
+name	DeepSeekMath GRPO	2402.03300
+desc	group relative policy optimization that drops the critic and estimates the baseline from group scores for math reasoning	2402.03300
+name	proximal policy optimization PPO	1707.06347
+desc	policy gradient with a clipped surrogate objective allowing multiple epochs of minibatch updates	1707.06347
+name	ReAct reasoning and acting	2210.03629
+desc	interleave reasoning traces and task-specific actions such as Wikipedia API calls in language model agents	2210.03629
+name	Toolformer	2302.04761
+desc	language model learns in a self-supervised way when to call external APIs like a calculator or search engine	2302.04761
+name	Switch Transformers	2101.03961
+name	sparsely-gated mixture-of-experts layer	1701.06538
+desc	conditional computation with a trainable gating network selecting a sparse combination of thousands of feed-forward experts	1701.06538
+name	RoFormer rotary position embedding	2104.09864
+desc	encode absolute position with a rotation matrix so that self-attention depends on relative position	2104.09864
+name	T5 unified text-to-text transformer	1910.10683
+name	RoBERTa robustly optimized BERT pretraining	1907.11692
+name	MMLU massive multitask language understanding	2009.03300
+desc	benchmark of multiple-choice questions across 57 subjects including mathematics, history, law and medicine	2009.03300
+name	Mistral 7B	2310.06825
+name	Mamba selective state spaces	2312.00752
+desc	linear-time sequence model with input-dependent state space parameters and a hardware-aware parallel scan	2312.00752
+name	distilling the knowledge in a neural network	1503.02531
+desc	train a small model on the soft targets of a large ensemble with raised softmax temperature	1503.02531
+name	layer normalization	1607.06450
+name	vision transformer ViT 16x16 words	2010.11929
+desc	split an image into patches and feed the sequence of linear patch embeddings to a standard transformer for classification	2010.11929
+name	constitutional AI harmlessness from AI feedback	2212.08073
+name	denoising diffusion probabilistic models DDPM	2006.11239
+name	word2vec efficient estimation of word representations	1301.3781
+desc	continuous bag-of-words and skip-gram architectures for learning word vectors from large corpora	1301.3781
+name	Longformer long-document transformer	2004.05150
+name	GPTQ post-training quantization	2210.17323
+name	QLoRA quantized finetuning	2305.14314
+desc	backpropagate through a frozen 4-bit NormalFloat quantized model into low-rank adapters to finetune a 65B model on one GPU	2305.14314
+name	GELU gaussian error linear units	1606.08415
+name	batch normalization internal covariate shift	1502.03167
+name	PaLM pathways language model	2204.02311

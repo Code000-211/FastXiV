@@ -1,5 +1,6 @@
 //! fastxiv: a local arXiv search for LLM agents.
 
+mod eval;
 mod format;
 mod harvest;
 mod library;
@@ -25,6 +26,7 @@ Commands:
               -k N  --since YYYY[-MM]  --until YYYY[-MM]  --categories cs.CL,...  --detail N  QUERY...
   paper     Show one paper: ID
   related   Papers related to one: [-k N] ID
+  eval      Measure Hit@1/3/10 and MRR on a known-item set: [-k N] [FILE] (default eval/known-items.tsv)
   serve     Run the MCP server: over stdio, or over HTTP with --http ADDR (e.g. 127.0.0.1:8765)
               --threads N (default 4)  --refresh-secs N (default 300; 0: never)
               Set FASTXIV_TOKEN to require `Authorization: Bearer <token>` over HTTP.
@@ -141,11 +143,11 @@ fn run() -> Result<(), String> {
         }
         "index" => {
             let lib = Library::open(&data);
-            let view = wait_for_index(&lib)?;
-            // A saved index from before may be out of date: check the corpus and wait for the update.
-            lib.refresh();
+            wait_for_index(&lib)?;
+            // Fold changed papers into a rebuilt, saved index (an overlay would rank them lower).
+            lib.rebuild();
             std::thread::sleep(Duration::from_millis(100));
-            let view = if lib.building() { wait_for_index(&lib)? } else { view };
+            let view = wait_for_index(&lib)?;
             println!(
                 "{} papers, {} sections, {} terms, {} entities (built in {} ms)",
                 view.base.file_count(),
@@ -183,6 +185,16 @@ fn run() -> Result<(), String> {
             let p = lib.paper(&id).ok_or_else(|| format!("no paper \"{id}\" in {}", data.display()))?;
             let view = wait_for_index(&lib)?;
             print!("{}", format::answer(&lib.related(&view, &p, k.max(1)), &format!("related to {}", p.id), 3));
+        }
+        "eval" => {
+            let k = args.num(&["-k", "--k"], 10)?;
+            let file = args.words();
+            let file = if file.is_empty() { "eval/known-items.tsv".to_string() } else { file };
+            let text = std::fs::read_to_string(&file).map_err(|e| format!("{file}: {e}"))?;
+            let cases = eval::parse(&text)?;
+            let lib = Library::open(&data);
+            let view = wait_for_index(&lib)?;
+            print!("{}", eval::run(&lib, &view, &cases, k.max(1)));
         }
         "serve" => {
             let http = args.opt(&["--http"])?;

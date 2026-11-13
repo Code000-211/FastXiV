@@ -81,6 +81,13 @@ impl Library {
         self.engine.maybe_refresh();
     }
 
+    /// Rebuilds and saves the whole index in the background, folding in any changed papers. Papers
+    /// searched from the overlay of changed files rank worse than after a rebuild (eval: MRR 0.65
+    /// against 0.86 when the 70 known items sat in the overlay), so `fastxiv index` always folds.
+    pub fn rebuild(&self) {
+        self.engine.rebuild_in_background();
+    }
+
     pub fn paper(&self, id: &str) -> Option<Paper> {
         let id = paper::normalize_id(id)?;
         let text = std::fs::read_to_string(self.corpus.join(paper::rel_path(&id))).ok()?;

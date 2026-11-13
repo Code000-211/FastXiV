@@ -28,6 +28,23 @@ treat those numbers as an estimate.
 A harvest is limited by arXiv's server, not by fastxiv: about 9 s per page of 1,300 records. Three weeks of updates took
 3.5 minutes. A first full harvest of `cs` and `stat` is in the order of an hour or two (not measured).
 
+## Retrieval quality
+
+`eval/known-items.tsv` holds 70 known-item queries for 42 well-known papers (Transformer, BERT, LoRA, DPO, FlashAttention
+…). There are two kinds: `name` (how people refer to a paper) and `desc` (what it does, without its title's words).
+`fastxiv eval` reports Hit@1/3/10, MRR, and the queries that miss the top 3.
+
+| Corpus | Hit@1 | Hit@3 | Hit@10 | MRR |
+|---|---:|---:|---:|---:|
+| 14,822 recent papers plus the 42 targets, fresh index | 81% | 86% | 99% | 0.855 |
+| The same, with the 42 targets in the overlay of changed files | 50% | 73% | 96% | 0.647 |
+
+A small corpus is easier than the full one: measure on the server's 525k papers before trusting these numbers. Papers in
+the overlay rank lower until the index is rebuilt. That is why `fastxiv index` always rebuilds, and why the server
+folds an overlay into a rebuilt index after at most 10 minutes. The misses are mostly famous papers
+outranked by recent ones that reuse their title words ("SDS-LoRA", "TLRS-DPO"). A citation-count signal is the
+planned fix.
+
 ## Build
 
 Needs Rust (stable) and git. The docsearch core comes from microPi, pinned to a commit in `Cargo.toml`.
@@ -46,6 +63,7 @@ fastxiv index                            # build the index now (the server would
 fastxiv search "reduce KV cache memory for long context" -k 5 --since 2025
 fastxiv paper 2106.09685                 # also arXiv:2106.09685v2 or an arxiv.org / alphaxiv.org URL
 fastxiv related 2106.09685
+fastxiv eval                             # Hit@1/3/10 and MRR on eval/known-items.tsv
 fastxiv serve                            # MCP over stdio
 fastxiv serve --http 127.0.0.1:8765      # MCP over Streamable HTTP at /mcp, health at /health
 ```

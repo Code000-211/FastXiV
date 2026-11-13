@@ -44,7 +44,7 @@ struct Tally {
     rr: f64,
 }
 
-pub fn run(lib: &Library, view: &View, cases: &[Case], k: usize, prior: Option<f32>) -> String {
+pub fn run(lib: &Library, view: &View, cases: &[Case], k: usize, prior: Option<f32>, pool: Option<usize>) -> String {
     let mut per_kind: BTreeMap<&str, Tally> = BTreeMap::new();
     let mut misses = String::new();
     let mut absent = Vec::new();
@@ -54,7 +54,7 @@ pub fn run(lib: &Library, view: &View, cases: &[Case], k: usize, prior: Option<f
             absent.push(c.targets.join("|"));
             continue;
         }
-        let a = lib.search(view, &Query { text: &c.query, k, prior, ..Query::default() });
+        let a = lib.search(view, &Query { text: &c.query, k, prior, pool, ..Query::default() });
         total_ms += a.elapsed.as_secs_f64() * 1000.0;
         let rank = a.found.iter().position(|f| c.targets.contains(&f.paper.id)).map(|r| r + 1);
         let t = per_kind.entry(&c.kind).or_default();

@@ -11,7 +11,9 @@ use crate::citations::{self, Citations};
 use crate::paper::{self, Paper};
 
 /// Weight of the citation prior when a query does not set one (see `citations::prior`).
-pub const DEFAULT_PRIOR: f32 = 0.1;
+pub const DEFAULT_PRIOR: f32 = 0.2;
+/// How many of the best text matches the prior ranks again, when a query does not say.
+pub const DEFAULT_POOL: usize = 50;
 
 pub struct Library {
     engine: Arc<Engine>,
@@ -20,6 +22,7 @@ pub struct Library {
     /// The loaded citation counts and the modification time of the file they came from.
     cites: Mutex<(Option<SystemTime>, Arc<Citations>)>,
     pub default_prior: f32,
+    pub default_pool: usize,
 }
 
 #[derive(Default)]
@@ -35,6 +38,8 @@ pub struct Query<'a> {
     pub exclude: Option<&'a str>,
     /// Weight of the citation prior; `None` takes the library's default, 0 turns it off.
     pub prior: Option<f32>,
+    /// How many text matches the prior ranks again; `None` takes the library's default.
+    pub pool: Option<usize>,
 }
 
 pub struct Found {
@@ -84,6 +89,7 @@ impl Library {
             cites: Mutex::new((None, Arc::new(Citations::default()))),
             cites_file,
             default_prior: DEFAULT_PRIOR,
+            default_pool: DEFAULT_POOL,
         };
         lib.reload_citations();
         lib
@@ -135,7 +141,7 @@ impl Library {
         let prior = if cites.is_empty() { 0.0 } else { q.prior.unwrap_or(self.default_prior) };
         let filtered = q.since.is_some() || q.until.is_some() || !q.categories.is_empty() || q.exclude.is_some();
         // With a prior, a wider pool of candidates is ranked again; without, the first k win.
-        let want = if prior > 0.0 { (q.k * 5).max(50) } else { q.k };
+        let want = if prior > 0.0 { q.pool.unwrap_or(self.default_pool).max(q.k) } else { q.k };
         let fetch = if filtered { (want * 20).clamp(50, 2000) } else { want };
         let opts = SearchOpts { k: fetch, path_prefix: None, max_per_file: 1, graph: true };
         let results = view.search(q.text, &opts);

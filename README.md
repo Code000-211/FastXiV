@@ -43,7 +43,7 @@ A harvest is limited by arXiv's server, not by fastxiv: about 9 s per page of 1,
 
 `fastxiv citations` fetches citation counts from Semantic Scholar's batch API (500 papers per request, no key needed)
 into `citations.tsv`. Search then re-ranks the top 50 by `text score / best score + w · log10(1 + citations per year)`.
-The default weight is `w = 0.1`; set it with `--prior` on `search` and `serve`, and use 0 to turn it off. Results show
+The default weight is `w = 0.2`, re-ranking the top 50 (`--pool` in `eval`); set it with `--prior` on `search` and `serve`, and use 0 to turn it off. Results show
 their citation count. Semantic Scholar merges a preprint with its published version, so an arXiv id gets both
 versions' citations. On the local corpus, 14,713 of 14,864 papers had a count; fetching them took 2 minutes.
 
@@ -53,6 +53,20 @@ versions' citations. On the local corpus, 14,713 of 14,864 papers had a count; f
 | 0.05 | 84% | 93% | 99% | 0.890 |
 | 0.1 | 91% | 99% | 99% | 0.945 |
 | 0.2 – 0.5 | 96% | 99% | 99% | 0.969 |
+
+On the server's full corpus (525,906 papers, 524,016 with a count, fetched in 59 minutes):
+
+| Prior weight | Hit@1 | Hit@3 | Hit@10 | MRR |
+|---:|---:|---:|---:|---:|
+| 0 (off) | 49% | 61% | 73% | 0.564 |
+| 0.05 | 64% | 70% | 83% | 0.692 |
+| 0.1 | 71% | 77% | 83% | 0.751 |
+| 0.2 | 77% | 81% | 83% | 0.793 |
+| 0.3 | 79% | 83% | 83% | 0.805 |
+
+Hit@10 stays at 83% because in 12 of the 70 cases the target is not among the 50 text matches the prior ranks again.
+From 0.2 on, older well-cited neighbours start to win (DPR for the RAG paper, DDIM for DDPM), so the default stays
+at 0.2.
 
 The known-item set favours famous papers, so a strong prior always looks good on it. Topic searches ("diffusion
 language models", "KV cache compression") keep showing recent papers at 0.1. At 0.2 and above, the more-cited ones

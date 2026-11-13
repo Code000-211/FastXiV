@@ -31,7 +31,8 @@ Commands:
               --missing (only papers without a count yet)  --delay-ms 1100
               Set SEMANTIC_SCHOLAR_API_KEY to use a key (higher rate limit).
   eval      Measure Hit@1/3/10 and MRR on a known-item set: [-k N] [FILE] (default eval/known-items.tsv)
-              --prior 0,0.05,0.1 compares weights of the citation prior
+              --prior 0,0.1,0.2 and --pool 50,200 compare weights of the citation prior and how many
+              text matches it ranks again
   serve     Run the MCP server: over stdio, or over HTTP with --http ADDR (e.g. 127.0.0.1:8765)
               --threads N (default 4)  --refresh-secs N (default 300; 0: never)
               Set FASTXIV_TOKEN to require `Authorization: Bearer <token>` over HTTP.
@@ -176,7 +177,16 @@ fn run() -> Result<(), String> {
             }
             let lib = Library::open(&data);
             let view = wait_for_index(&lib)?;
-            let q = Query { text: &query, k: k.max(1), since, until, categories: &categories, exclude: None, prior };
+            let q = Query {
+                text: &query,
+                k: k.max(1),
+                since,
+                until,
+                categories: &categories,
+                exclude: None,
+                prior,
+                pool: None,
+            };
             print!("{}", format::answer(&lib.search(&view, &q), &query, detail));
         }
         "paper" => {
@@ -202,6 +212,13 @@ fn run() -> Result<(), String> {
                     .map(|w| w.parse::<f32>().map(Some).map_err(|_| format!("--prior: \"{w}\" is not a number")))
                     .collect::<Result<_, _>>()?,
             };
+            let pools: Vec<Option<usize>> = match args.list(&["--pool"])? {
+                None => vec![None],
+                Some(ns) => ns
+                    .iter()
+                    .map(|n| n.parse::<usize>().map(Some).map_err(|_| format!("--pool: \"{n}\" is not a number")))
+                    .collect::<Result<_, _>>()?,
+            };
             let file = args.words();
             let file = if file.is_empty() { "eval/known-items.tsv".to_string() } else { file };
             let text = std::fs::read_to_string(&file).map_err(|e| format!("{file}: {e}"))?;
@@ -209,10 +226,13 @@ fn run() -> Result<(), String> {
             let lib = Library::open(&data);
             let view = wait_for_index(&lib)?;
             eprintln!("{} citation counts loaded", lib.citations().len());
-            for prior in priors {
-                let w = prior.unwrap_or(lib.default_prior);
-                println!("=== citation prior {w}");
-                print!("{}", eval::run(&lib, &view, &cases, k.max(1), prior));
+            for prior in &priors {
+                for pool in &pools {
+                    let w = prior.unwrap_or(lib.default_prior);
+                    let n = pool.unwrap_or(lib.default_pool);
+                    println!("=== citation prior {w}, pool {n}");
+                    print!("{}", eval::run(&lib, &view, &cases, k.max(1), *prior, *pool));
+                }
             }
         }
         "citations" => {

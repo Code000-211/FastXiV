@@ -116,6 +116,7 @@ fn call_tool(lib: &Library, name: &str, args: &Value) -> Result<String, String> 
                 categories: &categories,
                 exclude: None,
                 prior: None,
+                pool: None,
             };
             Ok(format::answer(&lib.search(&view, &q), query, arg_k(args, "detail", 3, 50)))
         }

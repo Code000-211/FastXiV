@@ -35,6 +35,7 @@ Commands:
               text matches it ranks again
   serve     Run the MCP server: over stdio, or over HTTP with --http ADDR (e.g. 127.0.0.1:8765)
               --threads N (default 4)  --refresh-secs N (default 300; 0: never)
+              --prior W (citation prior, default 0.2)  --pool N (matches it ranks again, default 200)
               Set FASTXIV_TOKEN to require `Authorization: Bearer <token>` over HTTP.
 
 DIR defaults to $FASTXIV_DATA, else ~/.local/share/fastxiv.";
@@ -250,10 +251,15 @@ fn run() -> Result<(), String> {
             let refresh = args.num(&["--refresh-secs"], 300)?;
             let prior =
                 args.opt(&["--prior"])?.map(|v| v.parse::<f32>()).transpose().map_err(|_| "--prior needs a number")?;
+            let pool =
+                args.opt(&["--pool"])?.map(|v| v.parse::<usize>()).transpose().map_err(|_| "--pool needs a number")?;
             let token = std::env::var("FASTXIV_TOKEN").ok().filter(|t| !t.is_empty());
             let mut lib = Library::open(&data);
             if let Some(w) = prior {
                 lib.default_prior = w;
+            }
+            if let Some(n) = pool {
+                lib.default_pool = n.max(1);
             }
             let lib = Arc::new(lib);
             if refresh > 0 {

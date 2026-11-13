@@ -43,7 +43,7 @@ A harvest is limited by arXiv's server, not by fastxiv: about 9 s per page of 1,
 
 `fastxiv citations` fetches citation counts from Semantic Scholar's batch API (500 papers per request, no key needed)
 into `citations.tsv`. Search then re-ranks the top 50 by `text score / best score + w · log10(1 + citations per year)`.
-The default weight is `w = 0.2`, re-ranking the top 50 (`--pool` in `eval`); set it with `--prior` on `search` and `serve`, and use 0 to turn it off. Results show
+The defaults are `w = 0.2`, re-ranking the top 200 text matches (`--prior` and `--pool` on `search`/`serve`/`eval`); set it with `--prior` on `search` and `serve`, and use 0 to turn it off. Results show
 their citation count. Semantic Scholar merges a preprint with its published version, so an arXiv id gets both
 versions' citations. On the local corpus, 14,713 of 14,864 papers had a count; fetching them took 2 minutes.
 
@@ -64,9 +64,19 @@ On the server's full corpus (525,906 papers, 524,016 with a count, fetched in 59
 | 0.2 | 77% | 81% | 83% | 0.793 |
 | 0.3 | 79% | 83% | 83% | 0.805 |
 
-Hit@10 stays at 83% because in 12 of the 70 cases the target is not among the 50 text matches the prior ranks again.
-From 0.2 on, older well-cited neighbours start to win (DPR for the RAG paper, DDIM for DDPM), so the default stays
-at 0.2.
+With 50 candidates Hit@10 stays at 83%: in 12 of the 70 cases the target is not among the text matches the prior
+ranks again. Ranking more of them helps, up to a point:
+
+| Prior, pool | Hit@1 | Hit@3 | Hit@10 | MRR | Search |
+|---|---:|---:|---:|---:|---:|
+| 0.2, 50 | 77% | 81% | 83% | 0.793 | 4.8 ms |
+| **0.2, 200 (default)** | **81%** | **89%** | **91%** | **0.854** | **6.4 ms** |
+| 0.2, 500 | 81% | 89% | 91% | 0.854 | 8.7 ms |
+| 0.3, 200 | 86% | 91% | 91% | 0.883 | 6.4 ms |
+
+At 0.3 and above, older well-cited neighbours start to win (DPR for the RAG paper, DDIM for DDPM). The gap from 0.2
+to 0.3 is 3–4 of 70 queries on a set that favours famous papers, so the default stays at 0.2. Search times are from a
+fresh CLI process.
 
 The known-item set favours famous papers, so a strong prior always looks good on it. Topic searches ("diffusion
 language models", "KV cache compression") keep showing recent papers at 0.1. At 0.2 and above, the more-cited ones
